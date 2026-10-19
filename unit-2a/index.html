@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocabulary Matching Exercise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .matched {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8 flex flex-col justify-between">
+
+    <div class="max-w-4xl mx-auto w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-10">
+        <header class="mb-8 text-center border-b border-slate-100 pb-6">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">Vocabulary Matching Quiz</h1>
+            <p class="text-slate-500">Select a word on the left, then click its correct definition on the right.</p>
+        </header>
+
+        <div class="flex justify-between items-center mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+            <div>
+                <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold block">Score</span>
+                <span id="score-display" class="text-2xl font-bold text-indigo-600">0 / 10</span>
+            </div>
+            <button id="reset-btn" onclick="resetQuiz()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-lg transition-colors text-sm">
+                Reset Quiz
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="matching-grid">
+            <!-- Left Column: Words -->
+            <div id="words-column" class="space-y-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-2">Words</h2>
+                <!-- Dynamic Content -->
+            </div>
+
+            <!-- Right Column: Definitions -->
+            <div id="definitions-column" class="space-y-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-2">Definitions</h2>
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+
+        <div id="completion-message" class="hidden mt-8 p-6 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+            <h3 class="text-2xl font-bold text-emerald-800 mb-1">🎉 Great Job!</h3>
+            <p class="text-emerald-700">You matched all the vocabulary words correctly!</p>
+        </div>
+    </div>
+
+    <script>
+        const vocabulary = [
+            { id: 1, word: "attend", pos: "verb", def: "To go to or be present at a place like a school or event." },
+            { id: 2, word: "government", pos: "noun", def: "The group of people who officially rule and control a country." },
+            { id: 3, word: "free", pos: "adjective", def: "Costing no money; not costing anything." },
+            { id: 4, word: "primary school", pos: "noun", def: "A school for young children, usually ages 5 to 11." },
+            { id: 5, word: "decide", pos: "verb", def: "To choose something after thinking about options." },
+            { id: 6, word: "motivated", pos: "adjective", def: "Very interested and eager to do something or achieve a goal." },
+            { id: 7, word: "inspire", pos: "verb", def: "To give someone the desire or confidence to do something." },
+            { id: 8, word: "leaders", pos: "noun", def: "People who rule, guide, or direct a group or country." },
+            { id: 9, word: "become", pos: "verb", def: "To change or develop into something else." },
+            { id: 10, word: "grow up", pos: "phrasal verb", def: "To gradually become an adult over time." }
+        ];
+
+        let selectedWordId = null;
+        let matchedPairs = 0;
+
+        // Shuffle utility
+        function shuffle(array) {
+            return [...array].sort(() => Math.random() - 0.5);
+        }
+
+        function renderQuiz() {
+            const wordsCol = document.getElementById("words-column");
+            const defsCol = document.getElementById("definitions-column");
+            
+            // Clear existing elements (keeping the header)
+            wordsCol.innerHTML = '<h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-2">Words</h2>';
+            defsCol.innerHTML = '<h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-2">Definitions</h2>';
+
+            const shuffledWords = [...vocabulary];
+            const shuffledDefs = shuffle(vocabulary);
+
+            shuffledWords.forEach(item => {
+                const btn = document.createElement("button");
+                btn.className = "w-full text-left p-4 rounded-xl border border-slate-200 hover:border-indigo-400 bg-white shadow-sm transition-all text-slate-700 flex justify-between items-center group cursor-pointer font-medium";
+                btn.id = `word-${item.id}`;
+                btn.onclick = () => selectWord(item.id);
+                btn.innerHTML = `
+                    <span>${item.word} <span class="text-xs font-normal text-slate-400 italic">(${item.pos})</span></span>
+                    <span class="w-3 h-3 rounded-full border border-slate-300 group-hover:border-indigo-500 transition-colors"></span>
+                `;
+                wordsCol.appendChild(btn);
+            });
+
+            shuffledDefs.forEach(item => {
+                const btn = document.createElement("button");
+                btn.className = "w-full text-left p-4 rounded-xl border border-slate-200 hover:border-indigo-400 bg-white shadow-sm transition-all text-slate-600 transition-colors cursor-pointer text-sm font-normal";
+                btn.id = `def-${item.id}`;
+                btn.onclick = () => selectDefinition(item.id);
+                btn.textContent = item.def;
+                defsCol.appendChild(btn);
+            });
+        }
+
+        function selectWord(id) {
+            if (selectedWordId) {
+                const prev = document.getElementById(`word-${selectedWordId}`);
+                if (prev) prev.classList.remove("ring-2", "ring-indigo-500", "border-indigo-500", "bg-indigo-50/50");
+            }
+
+            selectedWordId = id;
+            const current = document.getElementById(`word-${id}`);
+            if (current) {
+                current.classList.add("ring-2", "ring-indigo-500", "border-indigo-500", "bg-indigo-50/50");
+            }
+        }
+
+        function selectDefinition(id) {
+            if (!selectedWordId) return;
+
+            const wordBtn = document.getElementById(`word-${selectedWordId}`);
+            const defBtn = document.getElementById(`def-${id}`);
+
+            if (selectedWordId === id) {
+                // Correct match
+                wordBtn.className = "w-full text-left p-4 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 font-medium matched flex justify-between items-center";
+                defBtn.className = "w-full text-left p-4 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 font-normal matched text-sm";
+                
+                matchedPairs++;
+                document.getElementById("score-display").textContent = `${matchedPairs} / 10`;
+
+                selectedWordId = null;
+
+                if (matchedPairs === 10) {
+                    document.getElementById("completion-message").classList.remove("hidden");
+                }
+            } else {
+                // Incorrect match animation feedback
+                defBtn.classList.add("border-rose-400", "bg-rose-50");
+                setTimeout(() => {
+                    defBtn.classList.remove("border-rose-400", "bg-rose-50");
+                }, 500);
+            }
+        }
+
+        function resetQuiz() {
+            selectedWordId = null;
+            matchedPairs = 0;
+            document.getElementById("score-display").textContent = "0 / 10";
+            document.getElementById("completion-message").classList.add("hidden");
+            renderQuiz();
+        }
+
+        // Initialize quiz on load
+        renderQuiz();
+    </script>
+</body>
+</html>
